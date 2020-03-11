@@ -24,7 +24,6 @@ def iou(box, clusters):
     cluster_area = clusters[:, 0] * clusters[:, 1]
 
     iou_ = np.true_divide(intersection, box_area + cluster_area - intersection + 1e-10)
-    # iou_ = intersection / (box_area + cluster_area - intersection + 1e-10)
 
     return iou_
 

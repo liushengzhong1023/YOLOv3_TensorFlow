@@ -104,8 +104,7 @@ def load_weights(var_list, weights_file):
                 bias = var2
                 bias_shape = bias.shape.as_list()
                 bias_params = np.prod(bias_shape)
-                bias_weights = weights[ptr:ptr +
-                                           bias_params].reshape(bias_shape)
+                bias_weights = weights[ptr:ptr + bias_params].reshape(bias_shape)
                 ptr += bias_params
                 assign_ops.append(tf.assign(bias, bias_weights, validate_shape=True))
                 # we loaded 1 variable
@@ -114,13 +113,11 @@ def load_weights(var_list, weights_file):
             shape = var1.shape.as_list()
             num_params = np.prod(shape)
 
-            var_weights = weights[ptr:ptr + num_params].reshape(
-                (shape[3], shape[2], shape[0], shape[1]))
+            var_weights = weights[ptr:ptr + num_params].reshape((shape[3], shape[2], shape[0], shape[1]))
             # remember to transpose to column-major
             var_weights = np.transpose(var_weights, (2, 3, 1, 0))
             ptr += num_params
-            assign_ops.append(
-                tf.assign(var1, var_weights, validate_shape=True))
+            assign_ops.append(tf.assign(var1, var_weights, validate_shape=True))
             i += 1
 
     return assign_ops
