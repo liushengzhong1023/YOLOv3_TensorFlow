@@ -14,6 +14,10 @@ from utils.nms_utils import gpu_nms
 
 from model import yolov3
 
+'''
+Set the evaluation parameters on VOC dataset.
+'''
+
 #################
 # ArgumentParser (defined by user)
 #################

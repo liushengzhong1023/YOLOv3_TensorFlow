@@ -6,6 +6,10 @@ from __future__ import division, print_function
 from utils.misc_utils import parse_anchors, read_class_names
 import math
 
+'''
+Set the parameters on training on VOC dataset.
+'''
+
 ### Some paths
 train_file = './data/my_data/VOC/train.txt'  # The path of the training txt file.
 val_file = './data/my_data/VOC/val.txt'  # The path of the validation txt file.
