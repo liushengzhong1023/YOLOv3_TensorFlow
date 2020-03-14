@@ -28,13 +28,15 @@ def parse_line(line):
     if 'str' not in str(type(line)):
         line = line.decode()
     s = line.strip().split(' ')
-    assert len(s) > 8, 'Annotation error! Please check your annotation file. Make sure there is at least one target object in each image.'
+    assert len(s) > 8, \
+        'Annotation error! Please check your annotation file. Make sure there is at least one target object in each image.'
     line_idx = int(s[0])
     pic_path = s[1]
     img_width = int(s[2])
     img_height = int(s[3])
     s = s[4:]
-    assert len(s) % 5 == 0, 'Annotation error! Please check your annotation file. Maybe partially missing some coordinates?'
+    assert len(s) % 5 == 0, \
+        'Annotation error! Please check your annotation file. Maybe partially missing some coordinates?'
     box_cnt = len(s) // 5
     boxes = []
     labels = []
@@ -89,8 +91,8 @@ def process_box(boxes, labels, img_size, class_num, anchors):
 
     # [N, 9]
     iou = (whs[:, :, 0] * whs[:, :, 1]) / (
-                box_sizes[:, :, 0] * box_sizes[:, :, 1] + anchors[:, 0] * anchors[:, 1] - whs[:, :, 0] * whs[:, :,
-                                                                                                         1] + 1e-10)
+            box_sizes[:, :, 0] * box_sizes[:, :, 1] + anchors[:, 0] * anchors[:, 1] - whs[:, :, 0] * whs[:, :,
+                                                                                                     1] + 1e-10)
     # [N]
     best_match_idx = np.argmax(iou, axis=1)
 
@@ -131,7 +133,7 @@ def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
         # expand the 2nd dimension, mix up weight default to 1.
         boxes = np.concatenate((boxes, np.full(shape=(boxes.shape[0], 1), fill_value=1., dtype=np.float32)), axis=-1)
     else:
-        # the mix up case
+        # the mix up case (2 images)
         _, pic_path1, boxes1, labels1, _, _ = parse_line(line[0])
         img1 = cv2.imread(pic_path1)
         img_idx, pic_path2, boxes2, labels2, _, _ = parse_line(line[1])
@@ -153,7 +155,7 @@ def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
         h, w, _ = img.shape
         boxes, crop = random_crop_with_constraints(boxes, (w, h))
         x0, y0, w, h = crop
-        img = img[y0: y0+h, x0: x0+w]
+        img = img[y0: y0 + h, x0: x0 + w]
 
         # resize with random interpolation
         h, w, _ = img.shape
@@ -176,7 +178,8 @@ def parse_data(line, class_num, img_size, anchors, mode, letterbox_resize):
     return img_idx, img, y_true_13, y_true_26, y_true_52
 
 
-def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=False, mix_up=False, letterbox_resize=True, interval=10):
+def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=False, mix_up=False,
+                   letterbox_resize=True, interval=10):
     '''
     generate a batch of imgs and labels
     param:
@@ -205,13 +208,14 @@ def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=F
         batch_line = batch_line.tolist()
         for idx, line in enumerate(batch_line):
             if np.random.uniform(0, 1) < 0.5:
-                mix_lines.append([line, random.sample(batch_line[:idx] + batch_line[idx+1:], 1)[0]])
+                mix_lines.append([line, random.sample(batch_line[:idx] + batch_line[idx + 1:], 1)[0]])
             else:
                 mix_lines.append(line)
         batch_line = mix_lines
 
     for line in batch_line:
-        img_idx, img, y_true_13, y_true_26, y_true_52 = parse_data(line, class_num, img_size, anchors, mode, letterbox_resize)
+        img_idx, img, y_true_13, y_true_26, y_true_52 = parse_data(line, class_num, img_size, anchors, mode,
+                                                                   letterbox_resize)
 
         img_idx_batch.append(img_idx)
         img_batch.append(img)
@@ -219,6 +223,8 @@ def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=F
         y_true_26_batch.append(y_true_26)
         y_true_52_batch.append(y_true_52)
 
-    img_idx_batch, img_batch, y_true_13_batch, y_true_26_batch, y_true_52_batch = np.asarray(img_idx_batch, np.int64), np.asarray(img_batch), np.asarray(y_true_13_batch), np.asarray(y_true_26_batch), np.asarray(y_true_52_batch)
+    img_idx_batch, img_batch, y_true_13_batch, y_true_26_batch, y_true_52_batch = np.asarray(img_idx_batch,
+                                                                                             np.int64), np.asarray(
+        img_batch), np.asarray(y_true_13_batch), np.asarray(y_true_26_batch), np.asarray(y_true_52_batch)
 
     return img_idx_batch, img_batch, y_true_13_batch, y_true_26_batch, y_true_52_batch

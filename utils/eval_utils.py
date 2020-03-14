@@ -96,7 +96,8 @@ def evaluate_on_cpu(y_pred, y_true, num_classes, calc_now=True, max_boxes=50, sc
         # pred_labels: [N]
         # N: Detected box number of the current image
         pred_boxes, pred_confs, pred_labels = cpu_nms(pred_boxes, pred_confs * pred_probs, num_classes,
-                                                      max_boxes=max_boxes, score_thresh=score_thresh, iou_thresh=iou_thresh)
+                                                      max_boxes=max_boxes, score_thresh=score_thresh,
+                                                      iou_thresh=iou_thresh)
 
         # len: N
         pred_labels_list = [] if pred_labels is None else pred_labels.tolist()
@@ -139,7 +140,8 @@ def evaluate_on_cpu(y_pred, y_true, num_classes, calc_now=True, max_boxes=50, sc
         return true_positive_dict, true_labels_dict, pred_labels_dict
 
 
-def evaluate_on_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, y_pred, y_true, num_classes, iou_thresh=0.5, calc_now=True):
+def evaluate_on_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, y_pred, y_true, num_classes, iou_thresh=0.5,
+                    calc_now=True):
     '''
     Given y_pred and y_true of a batch of data, get the recall and precision of the current batch.
     This function will perform gpu operation on the GPU.
@@ -262,6 +264,8 @@ def get_preds_gpu(sess, gpu_nms_op, pred_boxes_flag, pred_scores_flag, image_ids
 
 
 gt_dict = {}  # key: img_id, value: gt object list
+
+
 def parse_gt_rec(gt_filename, target_img_size, letterbox_resize=True):
     '''
     parse and re-organize the gt info.
@@ -394,7 +398,7 @@ def voc_eval(gt_dict, val_preds, classidx, iou_thres=0.5, use_07_metric=False):
 
             # union
             uni = ((bb[2] - bb[0] + 1.) * (bb[3] - bb[1] + 1.) + (BBGT[:, 2] - BBGT[:, 0] + 1.) * (
-                        BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
+                    BBGT[:, 3] - BBGT[:, 1] + 1.) - inters)
 
             overlaps = inters / uni
             ovmax = np.max(overlaps)

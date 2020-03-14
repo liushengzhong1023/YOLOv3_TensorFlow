@@ -16,6 +16,8 @@ from utils.nms_utils import gpu_nms
 
 from model import yolov3
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 # setting loggers
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S', filename=args_coco.progress_log_path, filemode='w')
@@ -60,7 +62,7 @@ iterator = tf.data.Iterator.from_structure(train_dataset.output_types, train_dat
 train_init_op = iterator.make_initializer(train_dataset)
 val_init_op = iterator.make_initializer(val_dataset)
 
-# get an element from the chosen dataset iterator
+# get a batch from the chosen dataset iterator
 image_ids, image, y_true_13, y_true_26, y_true_52 = iterator.get_next()
 y_true = [y_true_13, y_true_26, y_true_52]
 
@@ -82,7 +84,7 @@ y_pred = yolo_model.predict(pred_feature_maps)
 
 l2_loss = tf.losses.get_regularization_loss()
 
-# setting restore parts and vars to update
+# setting restore parts and vars to update (update the whole model by default)
 saver_to_restore = tf.train.Saver(
     var_list=tf.contrib.framework.get_variables_to_restore(include=args_coco.restore_include,
                                                            exclude=args_coco.restore_exclude))
@@ -123,6 +125,7 @@ with tf.control_dependencies(update_ops):
         tf.clip_by_norm(gv[0], 100.), gv[1]] for gv in gvs]
     train_op = optimizer.apply_gradients(clip_grad_var, global_step=global_step)
 
+# define two saver, one saves per epoch, another saves the best model
 if args_coco.save_optimizer:
     print(
         'Saving optimizer parameters to checkpoint! Remember to restore the global_step in the fine-tuning afterwards.')
@@ -228,6 +231,7 @@ with tf.Session() as sess:
             print(info)
             logging.info(info)
 
+            # save the best model when get better evaluation result
             if mAP > best_mAP:
                 best_mAP = mAP
                 saver_best.save(sess,
