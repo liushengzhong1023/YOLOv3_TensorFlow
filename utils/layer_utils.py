@@ -50,6 +50,7 @@ def darknet53_body(inputs):
     for i in range(8):
         net = res_block(net, 128)
 
+    # 52 * 52 feature map
     route_1 = net
     net = conv2d(net, 512, 3, strides=2)
 
@@ -57,18 +58,24 @@ def darknet53_body(inputs):
     for i in range(8):
         net = res_block(net, 256)
 
+    # 26 * 26 feature map
     route_2 = net
     net = conv2d(net, 1024, 3, strides=2)
 
     # res_block * 4
     for i in range(4):
         net = res_block(net, 512)
+
+    # 13 * 13 feature map
     route_3 = net
 
     return route_1, route_2, route_3
 
 
 def yolo_block(inputs, filters):
+    '''
+    [(1*1) conv + (3*3) conv] * 3 --> YOLO block
+    '''
     net = conv2d(inputs, filters * 1, 1)
     net = conv2d(net, filters * 2, 3)
     net = conv2d(net, filters * 1, 1)
@@ -80,6 +87,9 @@ def yolo_block(inputs, filters):
 
 
 def upsample_layer(inputs, out_shape):
+    '''
+    Upsample the feature map to given shape.
+    '''
     new_height, new_width = out_shape[1], out_shape[2]
     # NOTE: here height is the first
     # TODO: Do we need to set `align_corners` as True?
