@@ -28,7 +28,7 @@ parser.add_argument("--eval_file", type=str,
                     help="The path of the validation or test txt file.")
 
 parser.add_argument("--restore_path", type=str,
-                    default="/home/sl29/DeepScheduling/src/YOLOv3_TensorFlow/checkpoint/VOC/best_model_Epoch_79_step_220719_mAP_0.8416_loss_4.7036_lr_0.0001",
+                    default="/home/sl29/DeepScheduling/src/YOLOv3_TensorFlow/checkpoint/COCO/best_model_Epoch_4_step_97724_mAP_0.6052_loss_13.1901_lr_0.0001",
                     help="The path of the weights to restore.")
 
 parser.add_argument("--anchor_path", type=str,
@@ -41,7 +41,7 @@ parser.add_argument("--class_name_path", type=str,
 
 # some numbers
 parser.add_argument("--img_size", nargs='*', type=int,
-                    default=[416, 416],
+                    default=[608, 608],
                     help="Resize the input image to `img_size`, size format: [width, height]")
 
 parser.add_argument("--letterbox_resize", type=lambda x: (str(x).lower() == 'true'),

@@ -193,7 +193,7 @@ def get_batch_data(batch_line, class_num, img_size, anchors, mode, multi_scale=F
         interval: change the scale of image every interval batches. Note that it's indeterministic because of the multi threading.
     '''
     global iter_cnt
-    # multi_scale training
+    # multi_scale training, generating random image sizes
     if multi_scale and mode == 'train':
         random.seed(iter_cnt // interval)
         random_img_size = [[x * 32, x * 32] for x in range(10, 20)]

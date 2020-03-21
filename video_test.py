@@ -32,12 +32,15 @@ parser.add_argument("--save_video", type=lambda x: (str(x).lower() == 'true'), d
                     help="Whether to save the video detection results.")
 args = parser.parse_args()
 
+# ----------------------------------------------------------------------------------------------------------------------
+
 args.anchors = parse_anchors(args.anchor_path)
 args.classes = read_class_names(args.class_name_path)
 args.num_class = len(args.classes)
 
 color_table = get_color_table(args.num_class)
 
+# use openCV to load video as image frames
 vid = cv2.VideoCapture(args.input_video)
 video_frame_cnt = int(vid.get(7))
 video_width = int(vid.get(3))

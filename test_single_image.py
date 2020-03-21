@@ -17,17 +17,24 @@ from model import yolov3
 parser = argparse.ArgumentParser(description="YOLO-V3 test single image test procedure.")
 parser.add_argument("input_image", type=str,
                     help="The path of the input image.")
-parser.add_argument("--anchor_path", type=str, default="./data/yolo_anchors.txt",
+parser.add_argument("--anchor_path", type=str,
+                    default="./data/yolo_anchors.txt",
                     help="The path of the anchor txt file.")
-parser.add_argument("--new_size", nargs='*', type=int, default=[416, 416],
+parser.add_argument("--new_size", nargs='*', type=int,
+                    default=[416, 416],
                     help="Resize the input image with `new_size`, size format: [width, height]")
-parser.add_argument("--letterbox_resize", type=lambda x: (str(x).lower() == 'true'), default=True,
+parser.add_argument("--letterbox_resize", type=lambda x: (str(x).lower() == 'true'),
+                    default=True,
                     help="Whether to use the letterbox resize.")
-parser.add_argument("--class_name_path", type=str, default="./data/coco.names",
+parser.add_argument("--class_name_path", type=str,
+                    default="./data/coco.names",
                     help="The path of the class names.")
-parser.add_argument("--restore_path", type=str, default="./data/darknet_weights/yolov3.ckpt",
+parser.add_argument("--restore_path", type=str,
+                    default="./data/darknet_weights/yolov3.ckpt",
                     help="The path of the weights to restore.")
 args = parser.parse_args()
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 args.anchors = parse_anchors(args.anchor_path)
 args.classes = read_class_names(args.class_name_path)
@@ -35,6 +42,7 @@ args.num_class = len(args.classes)
 
 color_table = get_color_table(args.num_class)
 
+# read and resize image
 img_ori = cv2.imread(args.input_image)
 if args.letterbox_resize:
     img, resize_ratio, dw, dh = letterbox_resize(img_ori, args.new_size[0], args.new_size[1])
@@ -43,6 +51,8 @@ else:
     img = cv2.resize(img_ori, tuple(args.new_size))
 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 img = np.asarray(img, np.float32)
+
+# normalization --> [0, 1]
 img = img[np.newaxis, :] / 255.
 
 with tf.Session() as sess:
@@ -54,7 +64,8 @@ with tf.Session() as sess:
 
     pred_scores = pred_confs * pred_probs
 
-    boxes, scores, labels = gpu_nms(pred_boxes, pred_scores, args.num_class, max_boxes=200, score_thresh=0.3, nms_thresh=0.45)
+    boxes, scores, labels = gpu_nms(pred_boxes, pred_scores, args.num_class, max_boxes=200, score_thresh=0.3,
+                                    nms_thresh=0.45)
 
     saver = tf.train.Saver()
     saver.restore(sess, args.restore_path)
@@ -66,9 +77,10 @@ with tf.Session() as sess:
         boxes_[:, [0, 2]] = (boxes_[:, [0, 2]] - dw) / resize_ratio
         boxes_[:, [1, 3]] = (boxes_[:, [1, 3]] - dh) / resize_ratio
     else:
-        boxes_[:, [0, 2]] *= (width_ori/float(args.new_size[0]))
-        boxes_[:, [1, 3]] *= (height_ori/float(args.new_size[1]))
+        boxes_[:, [0, 2]] *= (width_ori / float(args.new_size[0]))
+        boxes_[:, [1, 3]] *= (height_ori / float(args.new_size[1]))
 
+    # print prediction result
     print("box coords:")
     print(boxes_)
     print('*' * 30)
@@ -78,9 +90,11 @@ with tf.Session() as sess:
     print("labels:")
     print(labels_)
 
+    # plot object detection result
     for i in range(len(boxes_)):
         x0, y0, x1, y1 = boxes_[i]
-        plot_one_box(img_ori, [x0, y0, x1, y1], label=args.classes[labels_[i]] + ', {:.2f}%'.format(scores_[i] * 100), color=color_table[labels_[i]])
+        plot_one_box(img_ori, [x0, y0, x1, y1], label=args.classes[labels_[i]] + ', {:.2f}%'.format(scores_[i] * 100),
+                     color=color_table[labels_[i]])
     cv2.imshow('Detection result', img_ori)
     cv2.imwrite('detection_result.jpg', img_ori)
     cv2.waitKey(0)
