@@ -6,6 +6,8 @@ import tensorflow as tf
 import numpy as np
 import argparse
 import cv2
+import time
+import os
 
 from utils.misc_utils import parse_anchors, read_class_names
 from utils.nms_utils import gpu_nms
@@ -14,7 +16,10 @@ from utils.data_aug import letterbox_resize
 
 from model import yolov3
 
-parser = argparse.ArgumentParser(description="YOLO-V3 test single image test procedure.")
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+parser = argparse.ArgumentParser(
+    description="YOLO-V3 inference time efficiency profiling w.r.t image sizes and batch sizes.")
 
 parser.add_argument("--input_image", type=str,
                     default="./data/demo_data/messi.jpg",
@@ -22,11 +27,14 @@ parser.add_argument("--input_image", type=str,
 parser.add_argument("--anchor_path", type=str,
                     default="./data/yolo_anchors.txt",
                     help="The path of the anchor txt file.")
-parser.add_argument("--new_size", nargs='*', type=int,
-                    default=[416, 416],
+parser.add_argument("--new_size", type=int,
+                    default=416,
                     help="Resize the input image with `new_size`, size format: [width, height]")
+parser.add_argument("--batch_size", type=int,
+                    default=5,
+                    help="Specify the number of images fed in each batch.")
 parser.add_argument("--letterbox_resize", type=lambda x: (str(x).lower() == 'true'),
-                    default=True,
+                    default=False,
                     help="Whether to use the letterbox resize.")
 parser.add_argument("--class_name_path", type=str,
                     default="./data/my_data/COCO/coco.names",
@@ -34,13 +42,14 @@ parser.add_argument("--class_name_path", type=str,
 parser.add_argument("--restore_path", type=str,
                     default="./data/darknet_weights/yolov3.ckpt",
                     help="The path of the weights to restore.")
-args = parser.parse_args()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+args = parser.parse_args()
 args.anchors = parse_anchors(args.anchor_path)
 args.classes = read_class_names(args.class_name_path)
 args.num_class = len(args.classes)
+args.new_size = [args.new_size, args.new_size]
 
 color_table = get_color_table(args.num_class)
 
@@ -56,9 +65,10 @@ img = np.asarray(img, np.float32)
 
 # normalization --> [0, 1]
 img = img[np.newaxis, :] / 255.
+img = np.tile(img, [args.batch_size, 1, 1, 1])
 
 with tf.Session() as sess:
-    input_data = tf.placeholder(tf.float32, [1, args.new_size[1], args.new_size[0], 3], name='input_data')
+    input_data = tf.placeholder(tf.float32, [None, args.new_size[1], args.new_size[0], 3], name='input_data')
     yolo_model = yolov3(args.num_class, args.anchors)
     with tf.variable_scope('yolov3'):
         pred_feature_maps = yolo_model.forward(input_data, False)
@@ -72,31 +82,19 @@ with tf.Session() as sess:
     saver = tf.train.Saver()
     saver.restore(sess, args.restore_path)
 
-    boxes_, scores_, labels_ = sess.run([boxes, scores, labels], feed_dict={input_data: img})
+    # warm up run
+    for _ in range(5):
+        boxes_, scores_, labels_ = sess.run([boxes, scores, labels], feed_dict={input_data: img})
 
-    # rescale the coordinates to the original image
-    if args.letterbox_resize:
-        boxes_[:, [0, 2]] = (boxes_[:, [0, 2]] - dw) / resize_ratio
-        boxes_[:, [1, 3]] = (boxes_[:, [1, 3]] - dh) / resize_ratio
-    else:
-        boxes_[:, [0, 2]] *= (width_ori / float(args.new_size[0]))
-        boxes_[:, [1, 3]] *= (height_ori / float(args.new_size[1]))
+    # time profiling
+    start = time.time()
 
-    # print prediction result
-    print("box coords:")
-    print(boxes_)
-    print('*' * 30)
-    print("scores:")
-    print(scores_)
-    print('*' * 30)
-    print("labels:")
-    print(labels_)
+    for _ in range(100):
+        boxes_, scores_, labels_ = sess.run([boxes, scores, labels], feed_dict={input_data: img})
 
-    # plot object detection result
-    for i in range(len(boxes_)):
-        x0, y0, x1, y1 = boxes_[i]
-        plot_one_box(img_ori, [x0, y0, x1, y1], label=args.classes[labels_[i]] + ', {:.2f}%'.format(scores_[i] * 100),
-                     color=color_table[labels_[i]])
-    cv2.imshow('Detection result', img_ori)
-    cv2.imwrite('detection_result.jpg', img_ori)
-    cv2.waitKey(0)
+    end = time.time()
+    print("------------------------------------------------------------------------")
+    avg_inference_time = (end-start) / float(100)
+    avg_throughput = 1 / avg_inference_time * args.batch_size
+    print("Average execution time: %f s" % avg_inference_time)
+    print("Average throughput: %f" % avg_throughput)
