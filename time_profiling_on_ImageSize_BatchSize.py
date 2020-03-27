@@ -16,7 +16,7 @@ from utils.data_aug import letterbox_resize
 
 from model import yolov3
 
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 parser = argparse.ArgumentParser(
     description="YOLO-V3 inference time efficiency profiling w.r.t image sizes and batch sizes.")
