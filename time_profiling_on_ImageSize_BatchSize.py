@@ -31,7 +31,7 @@ parser.add_argument("--new_size", type=int,
                     default=416,
                     help="Resize the input image with `new_size`, size format: [width, height]")
 parser.add_argument("--batch_size", type=int,
-                    default=5,
+                    default=1,
                     help="Specify the number of images fed in each batch.")
 parser.add_argument("--letterbox_resize", type=lambda x: (str(x).lower() == 'true'),
                     default=False,
